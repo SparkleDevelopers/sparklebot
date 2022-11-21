@@ -1,0 +1,16 @@
+disnake==2.5.0
+disnake-jishaku
+motor
+dnspython
+emoji
+textwrap3
+easy_pil
+PyNaCl
+SmallGoogleTranslator
+python-dotenv
+genshin
+https://github.com/Leyla-developers/leyla-justify/archive/refs/heads/main.zip
+https://github.com/MagM1go/DiscordActivity/archive/refs/heads/main.zip
+wikipedia
+https://github.com/MagM1go/logg/archive/refs/heads/main.zip
+redis>=4.2.0rc1

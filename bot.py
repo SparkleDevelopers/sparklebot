@@ -59,7 +59,6 @@ from jishaku.modules import find_extensions_in
 from core.classes.embeds import Embeds
 from core.classes.another_embeds import SparkleEmbed
 from core.classes.custom_context import SparkleContext
-from core.classes.time_posting import SparkleTasks
 
 from Tools.mobile_status import sparkle_mobile_identify
 
@@ -69,13 +68,12 @@ print(time4logs(), "Версия disnake:", disnake.__version__)
 
 
 #Начало кода бота
-logger = logging.getLogger('disnake')
-logger.setLevel(logging.DEBUG)
-id=random.randint(10000000, 99999999)
-handler = logging.FileHandler(filename=f'logs/disnake_{id}.log', encoding='utf-8', mode='w')
-handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
-logger.addHandler(handler)
+
+CONFIG = json.load(open("config.json"))
+TOKEN = CONFIG["token"]
+DEFAULTPREFIX = CONFIG["default_prefix"]
 INVITE = "https://discord.com/api/oauth2/authorize?client_id=932281102486372443&permissions=8&scope=bot"
+EMBEDFOOTER = "ЗОВУТ МАКСИМ#3903 | sparklebot.fun"
 release = oauth.release
 if release:
     token = Auth.discord_auth["release"]
@@ -84,18 +82,37 @@ else:
     
 begin = time.time()
 
-class Sparkle(commands.AutoShardedInteractionBot):
+class Sparkle(commands.AutoShardedBot):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.humanize = humanize.i18n.activate("ru_RU")
         self.embeds = Embeds(0xa8a6f0)
         self.embed = SparkleEmbed
         self.config = Config()
-        self.checks = SparkleTasks(self)
         DiscordWebSocket.identify = sparkle_mobile_identify
+        
+    def __getitem__(self, item: str) -> commands.Command:
+        return self.get_command(item)
 
-intents = disnake.Intents()
-client = Sparkle(enable_debug_events=False,status=disnake.Status.online)
+
+    def __delitem__(self, item: str) -> commands.Command:
+        return self.remove_command(item)
+        
+    async def get_context(self, message, *, cls=SparkleContext):
+        return await super().get_context(message=message, cls=cls)
+
+    async def on_ready(self):
+        if not self.checks.nsfw.is_running():
+            self.checks.nsfw.start()
+
+intents = disnake.Intents.all()
+client = Sparkle(command_prefix=prefixes.get2, intents=intents, strip_after_prefix=True, case_insensitive=True, enable_debug_events=False,status=disnake.Status.online)
+client.remove_command("help")
+
+intents = disnake.Intents.all()
+client = Sparkle(command_prefix=prefixes.get2, intents=intents, strip_after_prefix=True, case_insensitive=True, enable_debug_events=False,status=disnake.Status.online)
+client.remove_command("help")
 
 #База Данных
 db = sqlite3.connect("data/database.db")
@@ -105,11 +122,8 @@ print(time4logs(), 'Подключение шардов')
 
 for filename in os.listdir("./cogs"):
     if filename.endswith(".py") and not filename.startswith("_"):
-        try:
-            client.load_extension(f'cogs.{filename[:-3]}')
-            print(time4logs(), f"Module {filename} is loaded!")
-        except Exception as e:
-            print(f'Module {filename[:-3]} fucked up by Hueila: {e}')
+        client.load_extension(f'cogs.{filename[:-3]}')
+        print(time4logs(), f"Module {filename} is loaded!")
 
 print(time4logs(), f"All modules is loaded!")
 print(time4logs())
@@ -130,9 +144,9 @@ async def on_ready():
     print(time4logs(), '[INFO] [STATUS] Статус включен!')
     #статус
     while True:
-        await client.change_presence(activity=disnake.Game(name="🔥,help | sparklebot.fun"))
+        await client.change_presence(activity=disnake.Game(name="🔥,help | sparklebot.tk"))
         await sleep(15)
-        await client.change_presence(activity=disnake.Activity(type=disnake.ActivityType.watching, name="Beta 6.7"))
+        await client.change_presence(activity=disnake.Activity(type=disnake.ActivityType.watching, name="Beta 4.2"))
         await sleep(15)
         await client.change_presence(activity=disnake.Activity(type=disnake.ActivityType.watching, name=f"за {servers} серверов и {members} участников"))
         await sleep(15)
@@ -154,18 +168,28 @@ async def on_socket_raw_receive(msg):
 @client.event
 async def on_socket_raw_send(payload):
     print('>>', payload)
-
-
-@client.slash_command(name="ram", description="Посмотреть использованную оперативную память.")
-async def ram(inter: disnake.ApplicationCommandInteraction):
+    
+@client.command(name="ram", aliases = ["rams", "memory", "оперативка"])
+async def ram(ctx):
     if ctx.author.id in [578533097293873162, 743821499839807608, 805881717415346236]:
         emb = disnake.Embed()
         emb.color = 0xffffff
         emb.title = "💿 | Оперативная память"
         emb.description = f"Использовано памяти: **{round(memory_usage()[0], 2)} Мб**."
-        await inter.send(embed = emb)
+        await ctx.send(embed = emb)
     else:
-        await inter.send("Недостаточно прав(")
+        await ctx.send("Недостаточно прав(")
+
+@client.slash_command(name="ram", description="Посмотреть использованную оперативную память.")
+async def ram(ctx):
+    if ctx.author.id in [578533097293873162, 743821499839807608, 805881717415346236]:
+        emb = disnake.Embed()
+        emb.color = 0xffffff
+        emb.title = "💿 | Оперативная память"
+        emb.description = f"Использовано памяти: **{round(memory_usage()[0], 2)} Мб**."
+        await ctx.send(embed = emb)
+    else:
+        await ctx.send("Недостаточно прав(")
         
         
 async def print_ram():
@@ -181,12 +205,12 @@ def clean_code(content):
     else:
         return content
         
-@client.slash_command(name="exec", aliases = ["eval", "e"])
-async def _eval(inter: disnake.ApplicationCommandInteraction, *, code):
+@client.command(name="exec", aliases = ["eval", "e"])
+async def _eval(ctx, *, code):
     #await ctx.message.delete()
     if ctx.author.id in [578533097293873162, 805881717415346236]:
         pending_embed = disnake.Embed(title = 'Добрый день!', description = 'Код выполняется, подождите...', color = disnake.Colour.from_rgb(255, 255, 0))
-        message = await inter.send(embed = pending_embed)
+        message = await ctx.reply(embed = pending_embed)
         success_embed = disnake.Embed(title = 'Выполнение кода - успех', color = disnake.Colour.from_rgb(0, 255, 0))
         code = clean_code(code)
         local_variables = {
@@ -251,39 +275,57 @@ async def _eval(inter: disnake.ApplicationCommandInteraction, *, code):
         fail_embed = disnake.Embed(title = 'Выполнение кода - провал', color = disnake.Colour.from_rgb(255, 0, 0))
         fail_embed.add_field(name = 'Выполненный код:', value = f'```py\nкод скрыт из-за соображений безопасности.\n```', inline = False)
         fail_embed.add_field(name = 'Ошибка:', value = f'```\nВы не имеете право запускать данную команду.\n```', inline = False)
-        await inter.send(embed = fail_embed, delete_after = 60)
+        await ctx.reply(embed = fail_embed, delete_after = 60)
+
+@client.slash_command(name="setprefix", description="Установить кастомный префикс.")
+async def setprefix(ctx, newprefix: str = None):
+    if ctx.author.guild_permissions.administrator:
+        if newprefix is not None:
+            prefixes.set(ctx.guild.id, newprefix)
+            prefix = prefixes.get(ctx.guild.id)
+            
+            embed = disnake.Embed(title="<:yes:987416897073086565> Успешно!", description=f"На сервере теперь установлен префикс ` {prefix} `!", color=disnake.Color.green())
+
+            await ctx.send(embed=embed)
+
+        else:
+            prefix = prefixes.get(ctx.guild.id)
+            
+            embed = disnake.Embed(title="<:no:987416933282488341> Неправильное использование", description=f"Попробуйте: `{prefix}setprefix (префикс)`", color=disnake.Color.red())
+
+            await ctx.send(embed=embed)
 
 @client.slash_command(name="load", description="Загрузить модуль.")
-async def load (inter: disnake.ApplicationCommandInteraction, extension):
+async def load (ctx, extension):
     if ctx.author.id in [578533097293873162, 805881717415346236]:
         client.load_extension(f"cogs.{extension}")
         embed=disnake.Embed(title="Load", description=f"Module ` {extension} ` successfully loaded!", color=0x292B2F)
-        await inter.send(embed=embed)
+        await ctx.send(embed=embed)
     else:
-        await inter.send("<:X_:946355338364469258> Данная команда недоступна!")
+        await ctx.send("<:X_:946355338364469258> Данная команда недоступна!")
         
 
 @client.slash_command(name="unload", description="Выгрузить модуль.")
-async def unload (inter: disnake.ApplicationCommandInteraction, extension):
+async def unload (ctx, extension):
     if ctx.author.id in [578533097293873162, 805881717415346236]:
         client.unload_extension(f"cogs.{extension}")
         embed=disnake.Embed(title="Unload", description=f"Module ` {extension} ` successfully unloaded!", color=0x292B2F)
         await ctx.send(embed=embed)
     else:
-        await inter.send("<:X_:946355338364469258> Данная команда недоступна!")    
+        await ctx.send("<:X_:946355338364469258> Данная команда недоступна!")    
 
 @client.slash_command(name="reload", description="Перезагрузит модуль.")
-async def reload (inter: disnake.ApplicationCommandInteraction, extension):
+async def reload (ctx, extension):
     if ctx.author.id in [578533097293873162, 805881717415346236]:
         client.unload_extension(f"cogs.{extension}")
         client.load_extension(f"cogs.{extension}")
         embed=disnake.Embed(title="Reload", description=f"Module ` {extension} ` successfully reloaded!", color=0x292B2F)  
-        await inter.send(embed=embed)
+        await ctx.send(embed=embed)
     else:
         await ctx.send("<:X_:946355338364469258> Данная команда недоступна!")     
 
-@client.slash_command(name="ping")
-async def ping(inter: disnake.ApplicationCommandInteraction):
+@client.command(name="ping")
+async def ping(ctx: commands.Context):
     dpyVersion = disnake.__version__
     servers = len(client.guilds)
     members = len(set(client.get_all_members()))
@@ -294,6 +336,7 @@ async def ping(inter: disnake.ApplicationCommandInteraction):
     shard_servers = len([guild for guild in client.guilds if guild.shard_id == shard_id])
     embed=disnake.Embed(title=f"<:pingapii:979443700721664010> API Connection: {round(client.latency * 1000)}ms.", color=0x292B2F)
     embed.add_field(name="Состояние шардов", value=f"Cкоро")
-    await inter.reply(embed=embed)
+    await ctx.reply(embed=embed)
+    
 
-client.run(token)
+client.run(TOKEN)
