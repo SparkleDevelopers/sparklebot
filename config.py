@@ -12,8 +12,8 @@ class Color:
 
 class Auth:
     discord_auth = {
-        "debug":"OTMyMjgxMTAyNDg2MzcyNDQz.Gtp0M1.Ttfzsx268d0DI_w70hgc9i-I8aS10-iTg85Al8",
-        "release": "OTMyMjgxMTAyNDg2MzcyNDQz.Gtp0M1.Ttfzsx268d0DI_w70hgc9i-I8aS10-iTg85Al8"
+        "debug":"Ваш дэбаг токен",
+        "release": "Ваш токен"
     }
     qiwi_auth = ""
     
@@ -25,8 +25,8 @@ class Other:
     p2p = None
     uptime = 0
 class Config:
-    MONGO_CLIENT = AsyncIOMotorClient('mongodb+srv://Sparkle:gTgZoK7MVq0PnF9P@cluster0.c3g21uf.mongodb.net/?retryWrites=true&w=majority') 
+    MONGO_CLIENT = AsyncIOMotorClient('монго дибил?') 
     DB = MONGO_CLIENT.Sparkle
     DEFAULT_GUILD_DATA = {'color': 0xa8a6f0}
-    OLD_MONGO_CLIENT = AsyncIOMotorClient('mongodb+srv://Sparkle:gTgZoK7MVq0PnF9P@cluster0.c3g21uf.mongodb.net/?retryWrites=true&w=majority')
+    OLD_MONGO_CLIENT = AsyncIOMotorClient('монго дибил?')
     OLD_DB = OLD_MONGO_CLIENT.Sparkle
